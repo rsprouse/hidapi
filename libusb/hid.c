@@ -1163,6 +1163,36 @@ int HID_API_EXPORT hid_read(hid_device *dev, unsigned char *data, size_t length)
 	return hid_read_timeout(dev, data, length, dev->blocking ? -1 : 0);
 }
 
+int HID_API_EXPORT hid_get_input_report(hid_device *dev, unsigned char *data, size_t length)
+{
+   int res = -1;
+	int skipped_report_id = 0;
+	int report_number = data[0];
+
+	if (report_number == 0x0) {
+		/* Offset the return buffer by 1, so that the report ID
+		   will remain in byte 0. */
+		data++;
+		length--;
+		skipped_report_id = 1;
+	}
+	res = libusb_control_transfer(dev->device_handle,
+		LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE|LIBUSB_ENDPOINT_IN,
+		0x01/*HID get_report*/,
+		(1/*HID input*/ << 8) | report_number,
+		dev->interface,
+		(unsigned char *)data, length,
+		1000/*timeout millis*/);
+
+	if (res < 0)
+		return -1;
+
+	if (skipped_report_id)
+		res++;
+
+	return res;
+}
+
 int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 {
 	dev->blocking = !nonblock;
@@ -1387,7 +1417,7 @@ static struct lang_map_entry lang_map[] = {
 	LANG("Lithuanian", "lt", 0x0427),
 	LANG("F.Y.R.O. Macedonia", "mk", 0x042F),
 	LANG("Malay - Malaysia", "ms_my", 0x043E),
-	LANG("Malay â€“ Brunei", "ms_bn", 0x083E),
+	LANG("Malay – Brunei", "ms_bn", 0x083E),
 	LANG("Maltese", "mt", 0x043A),
 	LANG("Marathi", "mr", 0x044E),
 	LANG("Norwegian - Bokml", "no_no", 0x0414),
@@ -1438,7 +1468,7 @@ static struct lang_map_entry lang_map[] = {
 	LANG("Ukrainian", "uk", 0x0422),
 	LANG("Urdu", "ur", 0x0420),
 	LANG("Uzbek - Cyrillic", "uz_uz", 0x0843),
-	LANG("Uzbek â€“ Latin", "uz_uz", 0x0443),
+	LANG("Uzbek – Latin", "uz_uz", 0x0443),
 	LANG("Vietnamese", "vi", 0x042A),
 	LANG("Xhosa", "xh", 0x0434),
 	LANG("Yiddish", "yi", 0x043D),
