@@ -48,10 +48,13 @@ extern "C" {
 	#endif
 
 	/* Copied from inc/ddk/hidclass.h, part of the Windows DDK. */
+    #define HID_IN_CTL_CODE(id) \
+        CTL_CODE (FILE_DEVICE_KEYBOARD, (id), METHOD_IN_DIRECT, FILE_ANY_ACCESS)
 	#define HID_OUT_CTL_CODE(id)  \
 		CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
 	#define IOCTL_HID_GET_FEATURE                   HID_OUT_CTL_CODE(100)
 	#define IOCTL_HID_GET_INPUT_REPORT              HID_OUT_CTL_CODE(104)
+    #define IOCTL_HID_SET_OUTPUT_REPORT             HID_IN_CTL_CODE(101)
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -776,6 +779,48 @@ int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned c
 	if (!res) {
 		/* The operation failed. */
 		register_error(dev, "Get Input Report GetOverLappedResult");
+		return -1;
+	}
+	return bytes_returned;
+#endif
+}
+
+int HID_API_EXPORT HID_API_CALL hid_set_output_report(hid_device *dev, unsigned char *data, size_t length)
+{
+	BOOL res;
+#if 0
+	res = HidD_SetOutputReport(dev->device_handle, data, length);
+	if (!res) {
+		register_error(dev, "HidD_GetFeature");
+		return -1;
+	}
+	return 0;
+#else
+	DWORD bytes_returned;
+
+	OVERLAPPED ol;
+	memset(&ol, 0, sizeof(ol));
+
+	res = DeviceIoControl(dev->device_handle,
+		IOCTL_HID_SET_OUTPUT_REPORT,
+		data, length,
+		data, length,
+		&bytes_returned, &ol);
+
+	if (!res) {
+		if (GetLastError() != ERROR_IO_PENDING) {
+			/* DeviceIoControl() failed. Return error. */
+			register_error(dev, "Set Output Report DeviceIoControl");
+			return -1;
+		}
+	}
+
+	/* Wait here until the write is done. This makes
+	   hid_set_output_report() synchronous. */
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_returned, TRUE/*wait*/);
+	if (!res) {
+		/* The operation failed. */
+		register_error(dev, "Set Output Report GetOverLappedResult");
 		return -1;
 	}
 	return bytes_returned;

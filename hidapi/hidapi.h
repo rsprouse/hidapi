@@ -284,7 +284,8 @@ extern "C" {
 				This function returns the number of bytes read and
 				-1 on error.
 		*/
-		int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned char *data, size_t length);
+		int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *device, unsigned char *data, size_t length);
+		int HID_API_EXPORT HID_API_CALL hid_set_output_report(hid_device *device, unsigned char *data, size_t length);
 
 		/** @brief Send a Feature report to the device.
 

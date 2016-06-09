@@ -734,6 +734,15 @@ int HID_API_EXPORT hid_set_nonblocking(hid_device *dev, int nonblock)
 	return 0; /* Success */
 }
 
+int HID_API_EXPORT hid_set_output_report(hid_device *dev, unsigned char *data, size_t length)
+{
+	/* HIDRAW doesn't seem to provide an interface to set an output report
+	 * through control endpoint, so report an error and begone */
+	perror("hid_set_output_report unsupported for hidraw");
+
+	return -1;
+}
+
 
 int HID_API_EXPORT hid_get_input_report(hid_device *dev, unsigned char *data, size_t length)
 {
