@@ -759,6 +759,7 @@ int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned c
 	OVERLAPPED ol;
 	memset(&ol, 0, sizeof(ol));
 
+    int report_id = data[0];  /* Report ID */
 	res = DeviceIoControl(dev->device_handle,
 		IOCTL_HID_GET_INPUT_REPORT,
 		data, length,
@@ -781,6 +782,16 @@ int HID_API_EXPORT HID_API_CALL hid_get_input_report(hid_device *dev, unsigned c
 		register_error(dev, "Get Input Report GetOverLappedResult");
 		return -1;
 	}
+    /* Note by RLS: it appears that DeviceIOControl returns a report that does
+       not include the report number as the first byte, which makes this function
+       behave differently than the equivalent OS X function. We shift data in
+       the report back one and make the report number the first byte of the
+       returned report. */
+    int i;
+    for (i=bytes_returned; i > 0; i--) {
+        data[i] = data[i-1];
+    }
+    data[0] = report_id;
 	return bytes_returned;
 #endif
 }
